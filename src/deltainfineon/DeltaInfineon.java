@@ -36,7 +36,6 @@ public class DeltaInfineon
         
         gameWindow = new JFrame("Game Window");
         gameView = new GamePanel(this);
-        gameView.init();
         
         gameWindow.add(gameView);
         

@@ -22,11 +22,17 @@ class GamePanel extends JPanel implements KeyListener, Runnable
     private GraphicsEnvironment ge;
     private GraphicsConfiguration gc;
     
-    private Thread animThread;
+    private Graphics2D dbg;
+    private Image dbImage = null;
     
-    private boolean kdUp, kdDown, kdLeft, kdRight, kdFire; // keyDown states
+    private Thread animThread;
+    private volatile boolean running = false;
+    private volatile boolean gameOver = false;
+    private int period = 10;
     
     private int curGameState;
+    
+    private boolean kdUp, kdDown, kdLeft, kdRight, kdFire; // keyDown states
     
     // Constructors and Initializers
     public GamePanel(DeltaInfineon parent) {
@@ -35,42 +41,43 @@ class GamePanel extends JPanel implements KeyListener, Runnable
         // This should be a reference, not a copy!
         viewSize = app.config.getGameViewDimensions();
         
-        this.setFocusable(true);
-        
         ge = GraphicsEnvironment.getLocalGraphicsEnvironment();
         gc = ge.getDefaultScreenDevice().getDefaultConfiguration();
+        
+        setDoubleBuffered(true);
+        
+        this.setFocusable(true);
+        requestFocus();
         
         kdUp = kdDown = kdLeft = kdRight = kdFire = false;
         
         curGameState = 0;
-        
-        animThread = new Thread(this);
     }
     
-    public void init() {
+    private void startGame() {
         this.addKeyListener(this);
-        animThread.start();
+        
+        if (animThread == null || !running) {
+            animThread = new Thread(this);
+            animThread.start();
+        }
     }
     
-    // Overridden methods
+    public void stopGame() {
+        running = false;
+    }
+    
+    @Override
+    public void addNotify() {
+        super.addNotify();
+        startGame();
+    }
+    
     @Override
     public Dimension getPreferredSize() {
         return viewSize;
     }
     
-    @Override
-    public void paintComponent(Graphics g) {
-        super.paintComponent(g);
-        Graphics2D g2d = (Graphics2D)g;
-        
-        g2d.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING,
-                             RenderingHints.VALUE_TEXT_ANTIALIAS_OFF);
-        
-        g2d.setPaint(Color.BLACK);
-        g2d.fill(new Rectangle(0, 0, viewSize.width, viewSize.height));
-    }
-    
-    // Interface methods
     @Override
     public void keyTyped(KeyEvent ke) { /* not used */ }
 
@@ -119,22 +126,81 @@ class GamePanel extends JPanel implements KeyListener, Runnable
             case KeyEvent.VK_Z:
                 kdFire = false;
                 break;
+            case KeyEvent.VK_ESCAPE:
+                running = false;
+                break;
         }
     }
 
     @Override
     public void run() {
-        while (true) {
-            repaint();
+        long beforeTime, timeDiff, sleepTime;
+        
+        beforeTime = System.currentTimeMillis();
+        
+        running = true;
+        
+        while (running) {
+            gameUpdate();
+            gameRender();
+            paintScreen();
+            
+            timeDiff = System.currentTimeMillis() - beforeTime;
+            sleepTime = period - timeDiff; // time left in this loop
+            
+            if (sleepTime <= 0) // update/render took longer than period
+                sleepTime = 5; // sleep some anyhow
             
             try {
-                // TODO :: Find a better, more accurate method
-                Thread.sleep(app.config.sleepTime);
+                Thread.sleep(sleepTime);
             } catch (InterruptedException e) {
-                throw new RuntimeException(e);
+                
+            }
+            
+            beforeTime = System.currentTimeMillis();
+        }
+        
+        System.exit(0);
+    }
+    
+    private void gameUpdate() {
+        if (!gameOver) {
+            // update game state
+        }
+    }
+    
+    private void gameRender() {
+        if (dbImage == null) {
+            dbImage = createImage(viewSize.width, viewSize.height);
+            if (dbImage == null) {
+                System.out.println("Error: Graphics buffer is null.");
+                return;
+            } else {
+                dbg = (Graphics2D)dbImage.getGraphics();
+            }
+            
+            dbg.setColor(Color.BLACK);
+            dbg.fill(new Rectangle(0, 0, viewSize.width, viewSize.height));
+            
+            // Do drawing here
+            
+            if (gameOver) {
+                // game over message
             }
         }
     }
     
-    // Other methods
+    private void paintScreen() {
+        Graphics g;
+        try {
+            g = this.getGraphics();
+            if ((g != null) && (dbImage != null)) {
+                g.drawImage(dbImage, 0, 0, null);
+            }
+            Toolkit.getDefaultToolkit().sync();
+            g.dispose();
+        } catch (Exception e) {
+            System.out.println("Graphics context error:" + e);
+        }
+    }
 }
