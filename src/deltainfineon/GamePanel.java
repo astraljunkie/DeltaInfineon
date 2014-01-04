@@ -17,10 +17,9 @@ class GamePanel extends JPanel implements KeyListener, Runnable
 {
     // Globals
     private DeltaInfineon app;
+    private ConfigManager config;
+    private ResourceManager resources;
     private Dimension viewSize;
-    
-    private GraphicsEnvironment ge;
-    private GraphicsConfiguration gc;
     
     private Graphics2D dbg;
     private Image dbImage = null;
@@ -37,12 +36,11 @@ class GamePanel extends JPanel implements KeyListener, Runnable
     // Constructors and Initializers
     public GamePanel(DeltaInfineon parent) {
         app = parent;
+        config = app.getConfigManager();
+        resources = app.getResourceManager();
         
         // This should be a reference, not a copy!
-        viewSize = app.config.getGameViewDimensions();
-        
-        ge = GraphicsEnvironment.getLocalGraphicsEnvironment();
-        gc = ge.getDefaultScreenDevice().getDefaultConfiguration();
+        viewSize = app.getConfigManager().getGameViewDimensions();
         
         setDoubleBuffered(true);
         

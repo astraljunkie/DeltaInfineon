@@ -12,11 +12,12 @@ import javax.swing.SwingUtilities;
  * @author astraljunkie
  */
 public class DeltaInfineon
-{    
+{
+    private ConfigManager config;
+    private ResourceManager resources;
+    
     private JFrame gameWindow;
     private GamePanel gameView;
-    
-    public ConfigManager config;
 
     /**
      * @param args the command line arguments
@@ -32,7 +33,8 @@ public class DeltaInfineon
     }
     
     public DeltaInfineon() {
-        config = new ConfigManager();
+        config = new ConfigManager(); // <-- refactor into singleton
+        resources = ResourceManager.getInstance();
         
         gameWindow = new JFrame("Game Window");
         gameView = new GamePanel(this);
@@ -44,4 +46,7 @@ public class DeltaInfineon
         gameWindow.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         gameWindow.setVisible(true);
     }
+    
+    public ConfigManager getConfigManager()     { return config; }
+    public ResourceManager getResourceManager() { return resources; }
 }
